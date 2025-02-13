@@ -7,8 +7,11 @@ import {
   User,
   sendEmailVerification,
   UserCredential,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { FirebaseError } from "firebase/app";
 
@@ -21,6 +24,11 @@ interface UserAuthData {
 interface SignUpResponse extends UserAuthData {
   workspaceName: string;
 }
+
+const generateDefaultAvatar = (displayName: string): string => {
+    const encodedName = encodeURIComponent(displayName);
+    return `https://ui-avatars.com/api/?name=${encodedName}&background=random&rounded=true`;
+};
 
 // Firebase Error Messages
 const errorMessages: Record<string, string> = {
@@ -51,17 +59,22 @@ const updateUserDocument = async (uid: string, data: Record<string, any>) => {
   await setDoc(doc(db, "users", uid), data, { merge: true });
 };
 
+//-------------------------------------------------------------------------------------------------------
 // Sign Up Function
+//-------------------------------------------------------------------------------------------------------
+
 export const signUp = async (
   email: string,
   password: string,
+  displayName: string,
   workspaceName: string
 ): Promise<SignUpResponse> => {
   try {
-    if (!email || !password || !workspaceName) {
+    if (!email || !password || !displayName || !workspaceName) {
       throw new Error("All fields are required");
     }
 
+    // Create the user with Firebase Auth
     const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
@@ -69,24 +82,32 @@ export const signUp = async (
       throw new Error("User email is unexpectedly null.");
     }
 
-    // Create user document in Firestore
+    // Generate a default avatar from the displayName initials
+    const defaultAvatar = generateDefaultAvatar(displayName);
+
+    // Update the user's Firebase Auth profile with the displayName and default photoURL
+    await updateProfile(user, { displayName, photoURL: defaultAvatar });
+
+    // Create the Firestore user document (conforming to FirestoreUser interface)
     await setDoc(doc(db, "users", user.uid), {
+      displayName,
       email: user.email,
       workspaceName,
+      photoURL: defaultAvatar,
       createdAt: serverTimestamp(),
       lastLogin: serverTimestamp(),
       emailVerified: false,
       role: "owner",
     });
 
-    // Create workspace document in Firestore
+    // Create a workspace document in Firestore associated with the user
     await setDoc(doc(db, "workspaces", workspaceName), {
       owner: user.uid,
       members: [user.uid],
       createdAt: serverTimestamp(),
     });
 
-    // Send email verification
+    // Send email verification to the new user
     await sendEmailVerification(user);
 
     return {
@@ -100,7 +121,10 @@ export const signUp = async (
   }
 };
 
+//-------------------------------------------------------------------------------------------------------
 // Sign In Function
+//-------------------------------------------------------------------------------------------------------
+
 export const signIn = async (email: string, password: string): Promise<UserAuthData> => {
   try {
     const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -123,7 +147,57 @@ export const signIn = async (email: string, password: string): Promise<UserAuthD
   }
 };
 
-// Send Email Verification
+
+//-------------------------------------------------------------------------------------------------------
+// Google Sign In Flow
+//-------------------------------------------------------------------------------------------------------
+
+export const signInWithGoogle = async (): Promise<{ user: User; workspaceNameExists: boolean }> => {
+
+  try {
+    const provider = new GoogleAuthProvider();
+    const userCredential: UserCredential = await signInWithPopup(auth, provider);
+    const user = userCredential.user;
+
+    if (!user.email) {
+      throw new Error ("User email is unexpectedly null.")
+    }
+
+    // Reference to the user's Firestore document
+    const userDocRef = doc(db,"users", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+    let workspaceNameExists = false;
+
+    if(userDocSnap.exists()) {
+      const userData = userDocSnap.data();
+      if(userData.workspaceName && userData.workspaceName !== "") {
+        console.log("🚨 No workspace name found.")
+      } 
+    } else {
+      const defaultAvatar = generateDefaultAvatar(user.displayName || "User");
+      await setDoc(userDocRef, {
+        displayName: user.displayName,
+        email: user.email,
+        workspaceName: "", 
+        photoURL: user.photoURL || defaultAvatar,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        emailVerified: user.emailVerified
+      });
+    }
+
+    // Optionally, update the last login timestamp
+    await updateUserDocument(user.uid, { lastLogin: serverTimestamp()});
+    return { user, workspaceNameExists };
+  } catch (error: unknown) {
+    throw new Error(formatFirebaseError(error));
+  }
+};
+
+//-------------------------------------------------------------------------------------------------------
+// Send Verification Email
+//-------------------------------------------------------------------------------------------------------
+
 export const sendVerificationEmail = async (user: User): Promise<boolean> => {
   try {
     await sendEmailVerification(user);
@@ -133,7 +207,10 @@ export const sendVerificationEmail = async (user: User): Promise<boolean> => {
   }
 };
 
-// Send Password Reset Email
+//-------------------------------------------------------------------------------------------------------
+// Send Password Reset
+//-------------------------------------------------------------------------------------------------------
+
 export const sendPasswordReset = async (email: string): Promise<boolean> => {
   try {
     await sendPasswordResetEmail(auth, email);
@@ -143,7 +220,10 @@ export const sendPasswordReset = async (email: string): Promise<boolean> => {
   }
 };
 
+//-------------------------------------------------------------------------------------------------------
 // Logout Function
+//-------------------------------------------------------------------------------------------------------
+
 export const logout = async (): Promise<boolean> => {
   try {
     await signOut(auth);

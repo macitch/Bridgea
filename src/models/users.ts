@@ -3,5 +3,6 @@ export interface FirestoreUser {
   email: string;
   photoURL?: string;
   createdAt: Date;
+  workspaceName?: string;
   [key: string]: any;
 }

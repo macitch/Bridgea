@@ -1,20 +1,24 @@
- export default {
+// tailwind.config.js
+module.exports = {
     content: [
-        "./src/**/*.{js,jsx,ts,tsx}",
-        "./pages/**/*.{js,jsx,ts,tsx}",
-        "./components/**/*.{js,jsx,ts,tsx}"],
-        theme: {
-            extend: {
-                colors: {
-           white: "#ffffff",
-            seasalt: "#f6f6f6",
-            night: "#0b0b0b",
-            turquoise: "#1fd9ad",
-            imperialRed: "#fb3640",
-            mediumSlateBlue: "#925FFF",
-                }
-            },
-        },
-        plugins: [],
-        
-    };
+      "./src/**/*.{js,jsx,ts,tsx}",
+      "./pages/**/*.{js,jsx,ts,tsx}",
+      "./components/**/*.{js,jsx,ts,tsx}"
+    ],
+    theme: {
+      extend: {
+        colors: {
+          'b-white': 'var(--white)',
+          'b-lightGrey': 'var(--lightGrey)',
+          'b-black': 'var(--black)',
+          'b-orangeBase': 'var(--orangeBase)',
+          'b-orangeLightOut': 'var(--orangeLightOut)',
+          'b-orangeOut': 'var(--orangeOut)',
+          'b-yellow': 'var(--yellow)',
+          'b-green': 'var(--green)',
+          'b-violet': 'var(--violet)',
+        }
+      },
+    },
+    plugins: [],
+  };

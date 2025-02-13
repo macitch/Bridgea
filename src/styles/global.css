@@ -1,29 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700&display=swap');
 @import url('https://fonts.cdnfonts.com/css/lufga');
 @import "tailwindcss";
 
-
 /** Colors **/
+
 :root {
   --white: #ffffff;
-  --seasalt: #f6f6f6;
-  --night: #0b0b0b;
-  --turquoise: #1fd9ad;
-  --imperial-red: #fb3640;
-  --medium-slate-blue: #925FFF;
-}
-
-/** Applying colors to Tailwind utility classes */
-.bg-seasalt {
-  background-color: var(--seasalt);
-}
-.bg-white {
-  background-color: var(--white);
-}
-.text-night {
-  color: var(--night);
-}
-.bg-night {
-  background-color: var(--night);
+  --lightGrey: #fafafa;
+  --black: #1A1A1A;
+  --orangeBase: #ff6523;
+  --orangeLightOut: #f0b2a6;
+  --orangeOut: #f5a797;
+  --yellow: #fad02e;
+  --green: #49c182;
+  --violet: #9c4ce0;
 }
 
 body{
@@ -34,7 +24,7 @@ body{
   height: 100%;
   z-index: -1;
   overflow: hidden;
-  font-family: 'Lufga' ,sans-serif;
+  font-family: 'Urbanist', sans-serif;
   background-color: var(--seasalt);
 }
 

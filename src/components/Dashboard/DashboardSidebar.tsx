@@ -5,7 +5,15 @@ import {
   SidebarLink,
   SidebarLinkData,
 } from "../UI/SidebarElements";
-import { LayoutDashboard,Library ,Plus, Heart, Tags,Settings2, Search, } from "lucide-react";
+import {
+  LayoutDashboard,
+  Library,
+  Plus,
+  Heart,
+  Tags,
+  Settings2,
+  PanelLeft,
+} from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -13,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { logout } from "@/firebase/auth";
 import { useAuth } from "@/context/AuthProvider";
 import ProtectedRoute from "../Shared/ProtectedRoute";
+import DashboardNavBar from "./DashboardNavBar"; // Make sure this component exists
 
 export default function DashboardSidebar({ children }: { children?: React.ReactNode }) {
   const links: SidebarLinkData[] = [
@@ -22,19 +31,19 @@ export default function DashboardSidebar({ children }: { children?: React.ReactN
       icon: <LayoutDashboard className="text-night h-6 w-6 flex-shrink-0" />,
     },
     {
-      label: "Add Links",
-      href: "/addlink",
+      label: "New Link",
+      href: "/newlink",
       icon: <Plus className="text-night h-6 w-6 flex-shrink-0" />,
-    },
-    {
-      label: "Categories",
-      href: "/categories",
-      icon: <Library className="text-night h-6 w-6 flex-shrink-0" />,
     },
     {
       label: "Favorites",
       href: "/favorites",
       icon: <Heart className="text-night h-6 w-6 flex-shrink-0" />,
+    },
+    {
+      label: "Categories",
+      href: "/categories",
+      icon: <Library className="text-night h-6 w-6 flex-shrink-0" />,
     },
     {
       label: "Tags",
@@ -48,58 +57,47 @@ export default function DashboardSidebar({ children }: { children?: React.ReactN
     },
   ];
   const { userData } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const avatarUrl = userData?.photoURL || "/assets/logo.png";
 
   return (
     <ProtectedRoute>
-    <div className={cn("flex flex-col md:flex-row h-screen mx-auto bg-[#ffffff] overflow-hidden border border-neutral-300","h-[100vh]"
-    )}>
-      {/* Sidebar */}
-      <Sidebar open={open} setOpen={setOpen}>
-        <SidebarBody className="justify-between gap-10">
-          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-            {open ? <Logo /> : <LogoIcon />}
-            <div className="mt-8 flex flex-col gap-2">
+      {/* DashboardNavBar stays at the top */}
+      <DashboardNavBar />
+      <div className={cn("flex flex-col md:flex-row h-screen mx-auto bg-[var(--white)] overflow-hidden")}
+      style={{ height: "calc(100vh - 60px)" }}
+      >
+        {/* Sidebar */}
+        <Sidebar open={open} setOpen={setOpen}>
+          <SidebarBody className="h-full flex flex-col justify-between gap-10">
+            {/* Link items */}
+            <div className="flex flex-col gap-2">
               {links.map((link) => (
                 <SidebarLink key={link.label} link={link} />
               ))}
             </div>
-          </div>
-          <div>
-          <SidebarLink
-  link={{
-    label: `${userData?.displayName || "Guest"}`,
-    href: "#",
-    icon: (
-      <Image
-        src={avatarUrl}
-        className="h-7 w-7 flex-shrink-0 rounded-full"
-        width={50}
-        height={50}
-        alt="Avatar"
-      />
-    ),
-    onClick: async () => {
-      try {
-        console.log("🚪 Logging out...");
-        await logout(); 
-        window.location.href = "/login"; 
-      } catch (error) {
-        console.error("❌ Logout failed:", error);
-      }
-    },
-  }}
-/>
-          </div>
-        </SidebarBody>
-      </Sidebar>
+            {/* Toggle button at the bottom */}
+            <div className="mt-auto">
+              <SidebarLink
+                link={{
+                  label: "Toggle Sidebar",
+                  href: "#",
+                  icon: <PanelLeft />,
+                  onClick: () => {
+                    setOpen((prev) => !prev);
+                    console.log("Menu Icon Tapped");
+                  },
+                }}
+              />
+            </div>
+          </SidebarBody>
+        </Sidebar>
 
-      {/* Main Content Area */}
-      <main className="w-full overflow-y-auto bg-[#d1d1d1] p-4 rounded-tl-2xl">
-        {children || <div className="text-gray-700">No content available.</div>}
-      </main>
-    </div>
+        {/* Main Content Area */}
+        <main className="w-full overflow-y-auto bg-[#e4e4e4] p-4 rounded-tl-2xl">
+          {children || <div className="text-gray-700">No content available.</div>}
+        </main>
+      </div>
     </ProtectedRoute>
   );
 }

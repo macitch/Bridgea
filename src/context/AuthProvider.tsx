@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth, db } from "@/firebase/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { FirestoreUser } from "@/models/users";
 
@@ -31,21 +31,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     console.log("🔄 Checking authentication state...");
+    let unsubscribeUserDoc: (() => void) | null = null;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("🟡 Firebase onAuthStateChanged triggered", user);
-
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
         console.log("✅ Firebase user detected:", user);
-
-        try {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
-
-          if (userDoc.exists()) {
-            console.log("✅ Firestore user data found:", userDoc.data());
-            setUserData(userDoc.data() as FirestoreUser);
+        const userDocRef = doc(db, "users", user.uid);
+        
+        // Subscribe to realtime updates for the user document.
+        unsubscribeUserDoc = onSnapshot(userDocRef, (snapshot) => {
+          if (snapshot.exists()) {
+            console.log("✅ Firestore user data updated:", snapshot.data());
+            setUserData(snapshot.data() as FirestoreUser);
           } else {
             console.warn("⚠️ No Firestore user data found for UID:", user.uid, "— creating new user document.");
             const newUserData: FirestoreUser = {
@@ -55,28 +53,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               emailVerified: user.emailVerified,
               photoURL: user.photoURL || "",
               phoneNumber: user.phoneNumber || "",
-              createdAt: new Date(), // or use serverTimestamp() if you prefer
+              workspaceName: "",
+              createdAt: new Date(),
               lastSignInTime: user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime) : undefined,
-              roles: ["user"],
             };
-            await setDoc(userDocRef, newUserData);
+            setDoc(userDocRef, newUserData);
             setUserData(newUserData);
           }
-        } catch (error) {
-          console.error("❌ Firestore fetch error:", error);
-          setUserData(null);
-        }
+        });
       } else {
         console.log("🚨 No authenticated user found.");
         setUser(null);
         setUserData(null);
       }
-
+      // Important: Mark loading complete and initialization complete
       setLoading(false);
       setInitialized(true);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
+    };
   }, []);
 
   return (

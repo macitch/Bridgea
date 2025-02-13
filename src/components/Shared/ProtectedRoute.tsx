@@ -1,4 +1,3 @@
-// components/ProtectedRoute.tsx
 import { useRouter } from "next/router";
 import { useAuth } from "../../context/AuthProvider";
 import { useEffect } from "react";
@@ -14,7 +13,7 @@ const protectedRoutes = [
 ];
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, userData, initialized } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -24,7 +23,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user, loading, initialized, router]);
 
-  if (loading || !initialized || !user || !userData) {
+  if (loading || !initialized || !user) {
     return <div>Loading...</div>;
   }
 
