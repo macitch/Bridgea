@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
-import { signUp } from "../firebase/auth";
+import { signUp } from "../utils/auth";
 import { useRouter } from "next/router";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { motion } from "motion/react";

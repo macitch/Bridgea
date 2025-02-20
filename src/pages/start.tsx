@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/firebase/firebase';
+import { auth, db } from '@/utils/firebase';
 import { useAuth } from '@/context/AuthProvider';
 import { motion } from 'motion/react';
 

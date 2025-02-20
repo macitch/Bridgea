@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from "@/context/AuthProvider";
 import { useEffect, useState } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "@/firebase/firebase";
+import { db } from "@/utils/firebase";
 
 export default function Dashboard() {
   const { user, userData, loading } = useAuth();

@@ -6,10 +6,10 @@ import { Menu, X } from "lucide-react";
 
 // Define SidebarLinkData type
 export interface SidebarLinkData {
-  label: string; 
-  href: string; 
-  icon: React.ReactNode; 
-  onClick?: () => void; 
+  label: string;
+  href: string;
+  icon: React.ReactNode;
+  onClick?: () => void;
 }
 
 // Context for sidebar state
@@ -18,7 +18,9 @@ interface SidebarContextProps {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   animate: boolean;
 }
+
 const SidebarContext = createContext<SidebarContextProps | undefined>(undefined);
+
 export const useSidebar = () => {
   const context = useContext(SidebarContext);
   if (!context) {
@@ -39,9 +41,10 @@ export const SidebarProvider = ({
   setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
   animate?: boolean;
 }) => {
-  const [openState, setOpenState] = useState(false);
-  const open = openProp !== undefined ? openProp : openState;
-  const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = openProp ?? internalOpen;
+  const setOpen = setOpenProp ?? setInternalOpen;
+
   return (
     <SidebarContext.Provider value={{ open, setOpen, animate }}>
       {children}
@@ -63,8 +66,8 @@ export const Sidebar = ({
 }) => {
   return (
     <SidebarProvider open={open} setOpen={setOpen} animate={animate}>
-      {children}
-    </SidebarProvider>
+    {children}
+  </SidebarProvider>
   );
 };
 
@@ -84,17 +87,17 @@ export const DesktopSidebar = ({
   children,
   ...props
 }: React.ComponentProps<typeof motion.div>) => {
-  const { open, setOpen, animate } = useSidebar();
+  const { open, animate } = useSidebar();
+
   return (
     <motion.div
       className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-[#ffffff] w-[300px] flex-shrink-0",
+        "h-full px-4 py-4 hidden md:flex md:flex-col bg-red flex-shrink-0",
         className
       )}
       animate={{
-        width: animate ? (open ? "300px" : "60px") : "300px",
+        width: animate ? (open ? "280px" : "60px") : "280px",
       }}
-      onLoad={() => setOpen(true)}
       {...props}
     >
       {children}
@@ -104,17 +107,18 @@ export const DesktopSidebar = ({
 
 // MobileSidebar component
 export const MobileSidebar = ({ className, children, ...props }: React.ComponentProps<"div">) => {
-  const { open, setOpen } = useSidebar()
+  const { open, setOpen } = useSidebar();
+
   return (
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden  items-center justify-between bg-[#ffffff] w-full",
+          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-red w-full"
         )}
         {...props}
       >
         <div className="flex justify-end z-20 w-full">
-          <Menu className="text-[--night]" onClick={() => setOpen(!open)} />
+          <Menu className="text-[--night]" onClick={() => setOpen((prev) => !prev)} />
         </div>
         <AnimatePresence>
           {open && (
@@ -127,13 +131,13 @@ export const MobileSidebar = ({ className, children, ...props }: React.Component
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-[#ffffff] p-10 z-[100] flex flex-col justify-between",
-                className,
+                "fixed h-full w-full inset-0 bg-red p-10 z-[100] flex flex-col justify-between",
+                className
               )}
             >
               <div
                 className="absolute right-10 top-10 z-50 text-[--night]"
-                onClick={() => setOpen(!open)}
+                onClick={() => setOpen((prev) => !prev)}
               >
                 <X />
               </div>
@@ -143,8 +147,8 @@ export const MobileSidebar = ({ className, children, ...props }: React.Component
         </AnimatePresence>
       </div>
     </>
-  )
-}
+  );
+};
 
 // SidebarLink component
 export const SidebarLink = ({
@@ -152,7 +156,7 @@ export const SidebarLink = ({
   className,
   ...props
 }: {
-  link: SidebarLinkData; 
+  link: SidebarLinkData;
   className?: string;
   props?: LinkProps;
 }) => {
@@ -161,11 +165,11 @@ export const SidebarLink = ({
   return (
     <Link
       href={link.href}
-      onClick={link.onClick} 
-      className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2",
-        className
-      )}
+      onClick={(e) => {
+        e.stopPropagation();
+        link.onClick?.();
+      }}
+      className={cn("flex items-center justify-start gap-2 group/sidebar py-2", className)}
       {...props}
     >
       {link.icon}

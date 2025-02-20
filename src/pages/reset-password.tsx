@@ -1,5 +1,5 @@
 import { useState, FormEvent, ChangeEvent } from "react";
-import { sendPasswordReset, formatFirebaseError } from "../firebase/auth";
+import { sendPasswordReset, formatFirebaseError } from "../utils/auth";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import AnimatedBackground from "../components/UI/ShapedBackground"; 
