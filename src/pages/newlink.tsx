@@ -1,9 +1,38 @@
 import React, { useState, ChangeEvent, FormEvent, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { collection, addDoc, getDocs, query, where, serverTimestamp } from "firebase/firestore";
-import { db } from "@/utils/firebase";
-import DashboardSidebar from "@/components/Dashboard/DashboardSidebar";
+import { db } from "@/provider/Google/firebase";
+import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { useAuth } from "@/context/AuthProvider";
+
+// Helper function to build searchTerms from various fields
+function buildSearchTerms({
+  title,
+  tags,
+  categories,
+  description,
+  url,
+}: {
+  title: string;
+  tags: string[];
+  categories: string[];
+  description: string;
+  url: string;
+}) {
+  // Join the arrays into a string and concatenate all fields.
+  // Convert to lowercase so that searches are case-insensitive.
+  return (
+    title +
+    " " +
+    tags.join(" ") +
+    " " +
+    categories.join(" ") +
+    " " +
+    description +
+    " " +
+    url
+  ).toLowerCase();
+}
 
 export default function NewLink() {
   // URL & Metadata
@@ -44,7 +73,7 @@ export default function NewLink() {
     setMetadataLoading(true);
     try {
       // Fetch metadata
-      const res = await fetch(`/api/link-metadata?url=${encodeURIComponent(url)}`);
+      const res = await fetch(`/api/getMetadata?url=${encodeURIComponent(url)}`);
       const data = await res.json();
 
       setTitle(data.title || "");
@@ -122,7 +151,7 @@ export default function NewLink() {
   };
 
   /**
-   * Submit the link
+   * Submit the link (including searchTerms)
    */
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -137,6 +166,15 @@ export default function NewLink() {
     }
     setLoading(true);
     try {
+      // Build the searchTerms field by concatenating and normalizing relevant fields
+      const searchTerms = buildSearchTerms({
+        title,
+        tags,
+        categories: [mainCategory],
+        description,
+        url,
+      });
+
       await addDoc(collection(db, "links"), {
         url,
         title,
@@ -147,6 +185,7 @@ export default function NewLink() {
         isFavorite,
         userId: user.uid,
         createdAt: serverTimestamp(),
+        searchTerms, // <-- added searchTerms field
       });
       router.push("/dashboard");
     } catch (err) {
@@ -163,7 +202,7 @@ export default function NewLink() {
   if (!showFullForm) {
     return (
       <div className="flex h-[calc(100vh-60px)] rounded-md items-center justify-center bg-red-500">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-[90%] max-w-lg">
+        <div className="bg-[var(--white)] p-6 rounded-lg shadow-lg w-[90%] max-w-lg">
           <h2 className="text-2xl font-semibold text-[var(--black)] text-center">Add a New Link</h2>
           {error && <p className="text-red-500 text-center">{error}</p>}
           <div className="flex flex-col gap-4 mt-4">
@@ -172,12 +211,12 @@ export default function NewLink() {
               placeholder="Paste your link here"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="w-full h-12 px-4 rounded-md bg-[var(--lightGrey)] focus:ring-2 focus:ring-blue-500"
+              className="w-full h-12 px-4 rounded-md bg-[var(--grey)] focus:ring-2 focus:ring-blue-500"
             />
             <button
               onClick={handleLoadMetadata}
               disabled={metadataLoading}
-              className="w-full h-12 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-700"
+              className="w-full h-12 bg-blue-600 text-[var(--white)] rounded-md font-bold hover:bg-blue-700"
             >
               {metadataLoading ? "Loading..." : "Add Link"}
             </button>
@@ -188,12 +227,12 @@ export default function NewLink() {
   }
 
   /**
-   * Full Form View (no large gap to the sidebar)
+   * Full Form View
    */
   return (
     <div className="flex h-[calc(100vh-60px)]">
       <div className="flex-1 p-6 flex flex-col justify-between">
-        <div className="bg-white rounded-xl shadow-md h-full w-full p-6 flex flex-col">
+        <div className="bg-[var(--white)] rounded-xl shadow-md h-full w-full p-6 flex flex-col">
           <form onSubmit={handleSubmit} className="h-full flex flex-col">
             {/* Title Field */}
             <div className="mb-4">
@@ -260,7 +299,7 @@ export default function NewLink() {
                       className="w-full h-12 px-4 py-3 border border-gray-300 rounded-xl bg-gray-100"
                     />
                   ) : (
-                    <div className="flex items-center cursor-pointer" onClick={() => setEditingCategory(true)}>
+                    <div className="flex items-center cursor-pointer" onClick={handleCategoryClick}>
                       <span className="px-4 py-3 border border-gray-300 rounded-xl bg-gray-100">
                         {mainCategory || "No category set"}
                       </span>
@@ -287,7 +326,7 @@ export default function NewLink() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 text-white rounded-xl font-bold bg-black hover:text-black hover:bg-orange-500"
+                className="w-full h-12 text-[var(--white)] rounded-xl font-bold bg-black hover:text-black hover:bg-orange-500"
               >
                 {loading ? "Saving..." : "Add Link"}
               </button>
@@ -301,5 +340,5 @@ export default function NewLink() {
 }
 
 NewLink.getLayout = function getLayout(page: React.ReactNode) {
-  return <DashboardSidebar>{page}</DashboardSidebar>;
+  return <DashboardLayout>{page}</DashboardLayout>;
 };

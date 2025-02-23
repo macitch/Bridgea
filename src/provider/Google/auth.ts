@@ -12,7 +12,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { auth, db } from "../Google/firebase";
 import { FirebaseError } from "firebase/app";
 
 // Define TypeScript Interfaces

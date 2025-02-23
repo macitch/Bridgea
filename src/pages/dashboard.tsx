@@ -1,10 +1,9 @@
-// pages/dashboard.tsx
-import DashboardSidebar from '@/components/Dashboard/DashboardSidebar';
+import DashboardLayout from '@/components/Dashboard/DashboardLayout';
 import { useRouter } from 'next/router';
 import { useAuth } from "@/context/AuthProvider";
 import { useEffect, useState } from 'react';
 import { collection, query, where, orderBy, onSnapshot } from "firebase/firestore";
-import { db } from "@/utils/firebase";
+import { db } from "@/provider/Google/firebase";
 
 export default function Dashboard() {
   const { user, userData, loading } = useAuth();
@@ -72,7 +71,7 @@ export default function Dashboard() {
           ) : (
             <ul className="space-y-4">
               {links.map(link => (
-                <li key={link.id} className="p-4 border rounded-lg bg-white">
+                <li key={link.id} className="p-4 border rounded-lg bg-[var(--white)]">
                   <a
                     href={link.url}
                     target="_blank"
@@ -102,5 +101,5 @@ export default function Dashboard() {
 }
 
 Dashboard.getLayout = function getLayout(page: React.ReactNode) {
-  return <DashboardSidebar>{page}</DashboardSidebar>;
+  return <DashboardLayout>{page}</DashboardLayout>;
 };

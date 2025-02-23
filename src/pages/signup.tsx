@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from "react";
-import { signUp } from "../utils/auth";
+import { signUp } from "../provider/Google/auth";
 import { useRouter } from "next/router";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { motion } from "motion/react";
@@ -107,7 +107,7 @@ const SignUpPage = () => {
               value={displayName}
               onChange={(e) => setDisplayname(e.target.value)}
               required
-              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--lightGrey)] focus:outline-none focus:border-black"
+              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--grey)] focus:outline-none focus:border-black"
             />
             <input
               type="email"
@@ -115,7 +115,7 @@ const SignUpPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--lightGrey)] focus:outline-none focus:border-black"
+              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--grey)] focus:outline-none focus:border-black"
             />
             <input
               type="password"
@@ -123,13 +123,13 @@ const SignUpPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--lightGrey)] focus:outline-none focus:border-black"
+              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--grey)] focus:outline-none focus:border-black"
             />
             <div className="flex w-[400px] mt-4">
             <button
               type="submit"
               disabled={loading}
-              className={`flex-[3] h-[4.1rem] text-white rounded-xl font-bold bg-[var(--black)] hover:text-[var(--black)] hover:bg-[var(--orangeBase)] ${
+              className={`flex-[3] h-[4.1rem] text-[var(--white)] rounded-xl font-bold bg-[var(--black)] hover:text-[var(--black)] hover:bg-[var(--orange)] ${
                 loading ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
@@ -149,7 +149,7 @@ const SignUpPage = () => {
                     height="32" 
                     viewBox="0 0 32 32" 
                     fill="currentColor"
-                    className="transition-colors duration-200 group-hover:text-[var(--orangeBase)]"
+                    className="transition-colors duration-200 group-hover:text-[var(--orange)]"
                   >
                     <path d="M29.44,16.318c0-.993-.089-1.947-.255-2.864h-13.185v5.422h7.535c-.331,1.744-1.324,3.22-2.813,4.213v3.525h4.544c2.647-2.444,4.175-6.033,4.175-10.296Z" opacity=".4"></path>
                     <path d="M16,30c3.78,0,6.949-1.247,9.265-3.385l-4.544-3.525c-1.247,.84-2.838,1.349-4.722,1.349-3.64,0-6.733-2.456-7.84-5.765l-2.717,2.09-1.941,1.525c2.304,4.569,7.025,7.713,12.498,7.713Z"></path>
@@ -164,7 +164,7 @@ const SignUpPage = () => {
                     height="32" 
                     viewBox="0 0 32 32" 
                     fill="currentColor"
-                    className="transition-colors duration-200 group-hover:text-[var(--orangeBase)]"
+                    className="transition-colors duration-200 group-hover:text-[var(--orange)]"
                   >
                     <path d="M16,2.345c7.735,0,14,6.265,14,14-.002,6.015-3.839,11.359-9.537,13.282-.7,.14-.963-.298-.963-.665,0-.473,.018-1.978,.018-3.85,0-1.312-.437-2.152-.945-2.59,3.115-.35,6.388-1.54,6.388-6.912,0-1.54-.543-2.783-1.435-3.762,.14-.35,.63-1.785-.14-3.71,0,0-1.173-.385-3.85,1.435-1.12-.315-2.31-.472-3.5-.472s-2.38,.157-3.5,.472c-2.677-1.802-3.85-1.435-3.85-1.435-.77,1.925-.28,3.36-.14,3.71-.892,.98-1.435,2.24-1.435,3.762,0,5.355,3.255,6.563,6.37,6.913-.403,.35-.77,.963-.893,1.872-.805,.368-2.818,.963-4.077-1.155-.263-.42-1.05-1.452-2.152-1.435-1.173,.018-.472,.665,.017,.927,.595,.332,1.277,1.575,1.435,1.978,.28,.787,1.19,2.293,4.707,1.645,0,1.173,.018,2.275,.018,2.607,0,.368-.263,.787-.963,.665-5.719-1.904-9.576-7.255-9.573-13.283,0-7.735,6.265-14,14-14Z"></path>
                   </svg>
@@ -176,7 +176,7 @@ const SignUpPage = () => {
                     height="32" 
                     viewBox="0 0 32 32" 
                     fill="currentColor"
-                    className="transition-colors duration-200 group-hover:text-[var(--orangeBase)]"
+                    className="transition-colors duration-200 group-hover:text-[var(--orange)]"
                   >
                     <path d="M18.05,16c0,5.018-4.041,9.087-9.025,9.087S0,21.018,0,16,4.041,6.913,9.025,6.913s9.025,4.069,9.025,9.087m9.901,0c0,4.724-2.02,8.555-4.513,8.555s-4.513-3.831-4.513-8.555,2.02-8.555,4.512-8.555,4.513,3.83,4.513,8.555m4.05,0c0,4.231-.71,7.664-1.587,7.664s-1.587-3.431-1.587-7.664,.71-7.664,1.587-7.664,1.587,3.431,1.587,7.664"></path>
                   </svg>
@@ -189,7 +189,7 @@ const SignUpPage = () => {
           {/* Sign In Link */}
           <div className="text-center text-sm text-black">
             Already have an account?{" "}
-            <a href="/login" className="text-[var(--orangeBase)] hover:underline">
+            <a href="/login" className="text-[var(--orange)] hover:underline">
               Log In
             </a>
           </div>

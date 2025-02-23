@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
+import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/utils/firebase";
-import DashboardSidebar from "@/components/Dashboard/DashboardSidebar";
+import { db } from "@/provider/Google/firebase";
 import { useAuth } from "@/context/AuthProvider";
+
 
 type Link = {
   id: string;
@@ -105,7 +106,7 @@ const Tags = () => {
 };
 
 Tags.getLayout = function getLayout(page: React.ReactNode) {
-  return <DashboardSidebar>{page}</DashboardSidebar>;
+  return <DashboardLayout>{page}</DashboardLayout>;
 };
 
 export default Tags;

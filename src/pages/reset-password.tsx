@@ -1,8 +1,7 @@
 import { useState, FormEvent, ChangeEvent } from "react";
-import { sendPasswordReset, formatFirebaseError } from "../utils/auth";
+import { sendPasswordReset, formatFirebaseError } from "../provider/Google/auth";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import AnimatedBackground from "../components/UI/ShapedBackground"; 
 import { FirebaseError } from "firebase/app"; // Ensure FirebaseError is imported
 
 const ForgotPasswordPage: React.FC = () => {
@@ -56,7 +55,6 @@ const ForgotPasswordPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <AnimatedBackground />
       <div className="max-w-md w-full bg-[var(--seasalt)] shadow-lg p-8 rounded-lg z-10">
         <div className="flex items-center mb-6">
           <img

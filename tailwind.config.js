@@ -9,10 +9,10 @@ module.exports = {
       extend: {
         colors: {
           'b-white': 'var(--white)',
-          'b-lightGrey': 'var(--lightGrey)',
+          'b-grey': 'var(--grey)',
           'b-black': 'var(--black)',
-          'b-orangeBase': 'var(--orangeBase)',
-          'b-orangeLightOut': 'var(--orangeLightOut)',
+          'b-orange': 'var(--orange)',
+          'b-orange2': 'var(--orangeLightOut)',
           'b-orangeOut': 'var(--orangeOut)',
           'b-yellow': 'var(--yellow)',
           'b-green': 'var(--green)',

@@ -5,10 +5,10 @@
 /** Colors **/
 
 :root {
-  --white: #f5f5f5;
-  --lightGrey: #bcc3c9;
-  --black: #15191b;
-  --orangeBase: #ff6523;
+  --white: #ffffff;
+  --grey: #f1f1f1;
+  --black: #000000;
+  --orange: #ff6523;
   --orangeLightOut: #f0b2a6;
   --yellow: #fad02e;
   --green: #49c182;
@@ -17,7 +17,6 @@
 
 body{
   font-family: 'Urbanist', sans-serif;
-  background-color: var(--seasalt);
 }
 
 * {

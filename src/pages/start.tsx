@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '@/utils/firebase';
+import { auth, db } from '@/provider/Google/firebase';
 import { useAuth } from '@/context/AuthProvider';
 import { motion } from 'motion/react';
 
@@ -112,13 +112,13 @@ const StartPage = () => {
               value={workspaceName}
               onChange={(e: ChangeEvent<HTMLInputElement>) => setWorkspaceName(e.target.value)}
               required
-              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--lightGrey)] focus:outline-none focus:border-black"
+              className="w-[400px] h-[4.1rem] px-4 py-3 border border-gray-300 rounded-xl bg-[var(--grey)] focus:outline-none focus:border-black"
             />
             <div className="flex w-[400px] mt-4">
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-[11.5rem] h-[4.1rem] text-white rounded-xl font-bold bg-[var(--black)] hover:text-[var(--black)] hover:bg-[var(--orangeBase)] ${
+                className={`w-[11.5rem] h-[4.1rem] text-[var(--white)] rounded-xl font-bold bg-[var(--black)] hover:text-[var(--black)] hover:bg-[var(--orange)] ${
                   loading ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >

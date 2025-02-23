@@ -1,4 +1,4 @@
-import DashboardSidebar from "@/components/Dashboard/DashboardSidebar";
+import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 
 const Favorites = () => {
   return (
@@ -10,7 +10,7 @@ const Favorites = () => {
 };
 
 Favorites.getLayout = function getLayout(page: React.ReactNode) {
-  return <DashboardSidebar>{page}</DashboardSidebar>;
+  return <DashboardLayout>{page}</DashboardLayout>;
 };
 
 export default Favorites;

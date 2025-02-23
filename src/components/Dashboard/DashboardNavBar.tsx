@@ -1,101 +1,150 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Search, ChevronDown } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { logout } from "@/utils/auth";
-import { useAuth } from "@/context/AuthProvider";
-import { cn } from "@/lib/utils"; // Import cn function
+import React, { useState, useMemo } from 'react';
+import { MessageCircle } from 'lucide-react';
+import SearchBar from '../UI/SearchBar';
+import UserMenu from '../UI/UserMenu';
+import { FirestoreUser } from '@/models/users';
+import { useAuth } from '@/context/AuthProvider';
+import { logout } from '@/provider/Google/auth';
+import { collection, query, orderBy, startAt, endAt, getDocs, where } from "firebase/firestore";
+import { db } from '@/provider/Google/firebase';
+import debounce from 'lodash.debounce';
+import { useRouter } from 'next/router';
 
-export default function DashboardNavBar() {
+export default function DashboardNavbar() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const { userData } = useAuth();
+  const router = useRouter();
   const avatarUrl = userData?.photoURL || "/assets/logo.png";
-  const [isDropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
+  const user: FirestoreUser = {
+    displayName: userData?.displayName || "Loading",
+    email: userData?.email || "Loading",
+    createdAt: new Date(),
+    photoURL: avatarUrl,
+  };
+
+  const debouncedSearch = useMemo(() => {
+    return debounce((value: string) => {
+      console.log("Debounced search triggered with value:", value);
+      handleSearch(value);
+    }, 300);
+  }, [userData]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    console.log("Search input changed:", value);
+    debouncedSearch(value);
+  };
+
+  const handleSearch = async (value: string) => {
+    console.log('Starting search for:', value);
+    setHasSearched(true);
+
+    if (!value.trim()) {
+      console.log("Search term is empty. Exiting search.");
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      const currentUid = userData?.uid;
+      if (!currentUid) {
+        console.error("User is not authenticated.");
+        return;
+      }
+      
+      const q = query(
+        collection(db, "links"),
+        where("userId", "==", currentUid),
+        orderBy("searchTerms"),
+        startAt(value.toLowerCase()),
+        endAt(value.toLowerCase() + "\uf8ff")
+      );
+      console.log("Firestore query constructed:", q);
+
+      const snapshot = await getDocs(q);
+      console.log("Firestore snapshot received. Document count:", snapshot.docs.length);
+
+      const results = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log("Search results parsed:", results);
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Search failed:", error);
+    }
+  };
+
+  // Navigate to the SearchPage and pass the search query as a URL parameter.
+  const handleResultClick = (result: any) => {
+    console.log(`Clicked on result: ${result.title || "Untitled"}`);
+    router.push(`/search?query=${encodeURIComponent(result.title || searchTerm)}`);
+  };
+
+  const handleProfile = () => {
+    console.log('Navigating to profile page.');
+    // Insert profile navigation logic here.
+  };
 
   const handleLogout = async () => {
+    console.log('Initiating logout process.');
     try {
       await logout();
-      window.location.href = "/login";
+      router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   return (
-    <nav
-      className={cn(
-        "fixed top-0 left-0 w-full bg-white px-4 py-2 z-50 flex items-center justify-between",
-        "md:px-8"
-      )}
-    >
-      {/* Left Side: Logo & Title */}
-      <div className="flex items-center space-x-1">
-        <Image src="/assets/logo.svg" alt="Bridgea Logo" width={32} height={32} />
-        <h1 className={cn("text-lg font-bold text-gray-800", "md:text-xl")}>Bridgea</h1>
+    <header className="w-full h-full flex items-center px-4 justify-between bg-[var(--white)] rounded-tl-2xl">
+      <div className="relative flex items-center space-x-2">
+        <SearchBar
+          placeholder="Search..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          onSearch={(value: string) => {
+            debouncedSearch.cancel();
+            console.log("Enter key pressed. Immediate search with value:", value);
+            handleSearch(value);
+            router.push(`/search?query=${encodeURIComponent(value)}`);
+          }}
+        />
+
+        {searchTerm && hasSearched && (
+          <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
+            {searchResults.length === 0 ? (
+              <p className="p-2 text-gray-500">No results found.</p>
+            ) : (
+              searchResults.map((result) => (
+                <div
+                  key={result.id}
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleResultClick(result)}
+                >
+                  {result.title || "Untitled"}
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Center: Search Bar */}
-      <div className="flex-grow flex justify-center">
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-          />
-        </div>
-      </div>
-
-      {/* Right Side: User Profile Dropdown */}
       <div className="flex items-center space-x-4">
-        <div ref={dropdownRef} className="relative">
-          <button onClick={toggleDropdown} className="flex items-center space-x-2 focus:outline-none">
-            <Image
-              src={avatarUrl}
-              alt="User Avatar"
-              width={40}
-              height={40}
-              className="border-2 border-gray-700 rounded-sm"
-            />
-            <span className="text-gray-700 font-base hidden md:block">{userData?.displayName}</span>
-            <ChevronDown
-              size={20}
-              className={`text-gray-700 transition-transform duration-200 ${
-                isDropdownOpen ? "rotate-180" : "rotate-0"
-              }`}
-            />
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-              <Link
-                href="/profile"
-                onClick={() => setDropdownOpen(false)}
-                className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
-              >
-                Profile
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
+        <button className="text-gray-600 hover:text-gray-800">
+          <MessageCircle className="w-5 h-5" />
+        </button>
+        <UserMenu
+          user={user}
+          onProfile={handleProfile}
+          onLogout={handleLogout}
+        />
       </div>
-    </nav>
+    </header>
   );
 }

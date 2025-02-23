@@ -1,15 +1,20 @@
 import React from "react";
 import { useRouter } from "next/router";
-import { logout } from "@/utils/auth";
+import { logout } from "@/provider/Google/auth";
 import { useAuth } from "@/context/AuthProvider";
 
 const IndexPage: React.FC = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const auth = useAuth(); // ✅ Don't destructure immediately
+
+  if (!auth) {
+    return <div>Loading authentication...</div>; // ✅ Prevents "useAuth must be used within an AuthProvider"
+  }
+
+  const { user } = auth;
 
   const handleLogout = async () => {
     try {
-      console.log("🚪 Logging out...");
       await logout();
       router.push("/login");
     } catch (error) {
@@ -25,18 +30,21 @@ const IndexPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
       <h1 className="text-2xl font-bold mb-6">Welcome to Bridgea</h1>
       <div className="space-x-4">
-        <button
-          onClick={handleLogout}
-          className="px-6 py-3 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-        >
-          Logout
-        </button>
-        <button
-          onClick={handleLogin}
-          className="px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        >
-          Login
-        </button>
+        {user ? (
+          <button
+            onClick={handleLogout}
+            className="px-6 py-3 bg-red-500 text-[var(--white)] rounded hover:bg-red-600 transition-colors"
+          >
+            Logout
+          </button>
+        ) : (
+          <button
+            onClick={handleLogin}
+            className="px-6 py-3 bg-blue-500 text-[var(--white)] rounded hover:bg-blue-600 transition-colors"
+          >
+            Login
+          </button>
+        )}
       </div>
       {user && (
         <p className="mt-4 text-sm text-gray-700">

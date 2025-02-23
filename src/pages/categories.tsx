@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
+import DashboardLayout from '@/components/Dashboard/DashboardLayout';
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/utils/firebase";
-import DashboardSidebar from "@/components/Dashboard/DashboardSidebar";
+import { db } from "@/provider/Google/firebase";
 import { useAuth } from "@/context/AuthProvider";
 
 type Link = {
@@ -72,7 +72,7 @@ const Categories = () => {
           <h2 className="text-xl font-semibold mb-2">{category}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {linksByCategory[category].map((link) => (
-              <div key={link.id} className="border p-4 rounded-lg">
+              <div key={link.id} className="border p-4 rounded-lg bg-white">
                 {link.imageUrl && (
                   <img
                     src={link.imageUrl}
@@ -100,7 +100,7 @@ const Categories = () => {
 };
 
 Categories.getLayout = function getLayout(page: React.ReactNode) {
-  return <DashboardSidebar>{page}</DashboardSidebar>;
+  return <DashboardLayout>{page}</DashboardLayout>;
 };
 
-export default Categories;
+export default Categories
