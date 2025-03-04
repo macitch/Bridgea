@@ -1,4 +1,5 @@
 import React from "react";
+// Import sidebar-related components and types.
 import {
   Sidebar,
   SidebarBody,
@@ -6,6 +7,7 @@ import {
   SidebarLinkData,
   useSidebar,
 } from "../UI/SidebarElements";
+// Import icons from lucide-react to be used in sidebar links.
 import {
   LayoutDashboard,
   Library,
@@ -14,13 +16,20 @@ import {
   Settings2,
   PanelLeft,
 } from "lucide-react";
+// Import Next.js Link for navigation.
 import Link from "next/link";
+// Import motion for animated components.
 import { motion } from "framer-motion";
+// Import Image component for optimized images.
 import Image from "next/image";
+// Import a custom button to create new links.
 import NewLinkButton from "../UI/NewLinkButton";
+// Import utility function for merging Tailwind classes.
 import { cn } from "@/utils/twMerge";
 
+// DashboardSidebar component: wraps the sidebar for the dashboard.
 export default function DashboardSidebar({ children }: { children?: React.ReactNode }) {
+  // Define an array of sidebar links with labels, hrefs, and corresponding icons.
   const links: SidebarLinkData[] = [
     { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-6 w-6" /> },
     { label: "Favorites", href: "/favorites", icon: <Heart className="h-6 w-6" /> },
@@ -31,8 +40,11 @@ export default function DashboardSidebar({ children }: { children?: React.ReactN
 
   return (
     <div className="flex flex-col md:flex-row h-screen mx-auto overflow-hidden">
+      {/* Render the Sidebar component which wraps the entire sidebar UI */}
       <Sidebar>
+        {/* SidebarBody is used to structure the sidebar with spacing */}
         <SidebarBody className="justify-between gap-10">
+          {/* SidebarContent handles the main content of the sidebar */}
           <div className={cn("flex flex-col flex-1 overflow-y-auto", "w-full")}>
             <SidebarContent links={links} />
           </div>
@@ -42,23 +54,26 @@ export default function DashboardSidebar({ children }: { children?: React.ReactN
   );
 }
 
+// SidebarContent component that renders the logo, new link button, links list, and toggle button.
 const SidebarContent = ({ links }: { links: SidebarLinkData[] }) => {
+  // Get the current open state and a function to set it from the sidebar context.
   const { open, setOpen } = useSidebar();
 
   return (
     <>
-      {/* Logo Section - Consistent Height */}
+      {/* Logo Section: Render full logo if sidebar is open, icon-only when collapsed */}
       {open ? <Logo /> : <LogoIcon />}
 
-      {/* New Link Button - Consistent Height */}
+      {/* New Link Button and navigation links */}
       <div className={cn("flex flex-col gap-2 w-full", open ? "items-start" : "items-center")}>
         <NewLinkButton />
+        {/* Map over the links array to render each sidebar link */}
         {links.map((link) => (
           <SidebarLink key={link.label} link={link} className="flex items-center" />
         ))}
       </div>
 
-      {/* Sidebar Toggle Button - Consistent Height */}
+      {/* Sidebar Toggle Button: Only visible on medium devices and above */}
       <div className="mt-auto w-full hidden md:block">
         <SidebarLink
           link={{
@@ -67,7 +82,8 @@ const SidebarContent = ({ links }: { links: SidebarLinkData[] }) => {
             icon: <PanelLeft className="h-6 w-6" />,
           }}
           className="flex items-center"
-          onClick={() => setOpen(!open)} 
+          // Toggle the sidebar open state when clicked.
+          onClick={() => setOpen(!open)}
         />
       </div>
     </>
@@ -75,9 +91,11 @@ const SidebarContent = ({ links }: { links: SidebarLinkData[] }) => {
 };
 
 /**
- * Logo Component - Matches Sidebar Elements
+ * Logo Component
+ * Renders the full logo along with the text "Bridgea." when the sidebar is open.
  */
 const Logo = () => {
+  // Get the sidebar open state from context.
   const { open } = useSidebar();
 
   return (
@@ -85,15 +103,16 @@ const Logo = () => {
       href="/dashboard"
       className={cn(
         "flex items-center rounded-full transition-all duration-200",
+        // When open, apply padding and full width; when collapsed, center content with fixed size.
         open ? "px-3 py-2 w-full" : "justify-center w-12 h-12"
       )}
     >
-      {/* Logo Icon - Ensures Consistent Size */}
+      {/* Logo Icon: Ensures consistent size regardless of sidebar state */}
       <div className="flex items-center justify-center w-10 h-10 rounded-full">
         <Image src="/assets/logo.svg" alt="Bridgea Logo" width={24} height={24} className="object-contain" />
       </div>
 
-      {/* Animated Text - Visible When Sidebar is Open */}
+      {/* Animated Text: Only visible when sidebar is open */}
       <motion.span
         animate={{
           opacity: open ? 1 : 0,
@@ -109,7 +128,8 @@ const Logo = () => {
 };
 
 /**
- * LogoIcon Component - For Collapsed Sidebar
+ * LogoIcon Component
+ * Renders only the logo icon for the collapsed sidebar.
  */
 const LogoIcon = () => (
   <Link
@@ -120,4 +140,5 @@ const LogoIcon = () => (
   </Link>
 );
 
+// Export Logo and LogoIcon components for use elsewhere if needed.
 export { Logo, LogoIcon };

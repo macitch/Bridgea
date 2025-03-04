@@ -18,16 +18,17 @@ export type Metadata = {
 };
 
 /**
- * Attempts to fetch the page using metascraper.
+ * fetchMetadataWithMetascraper
  *
- * This function fetches the HTML with Axios and then uses metascraper
- * with a set of plugins to extract key metadata (title, description, image).
- * 
+ * Fetches the HTML of the given URL using Axios and extracts metadata using metascraper
+ * with a set of plugins (title, description, image).
+ *
  * @param url - The URL of the page to fetch.
  * @returns A promise that resolves to a Metadata object.
  */
 export async function fetchMetadataWithMetascraper(url: string): Promise<Metadata> {
   console.log(`Fetching HTML via axios for metascraper from: ${url}`);
+  // Fetch the HTML content using axios.
   const { data: html } = await axios.get(url);
   console.log(`Fetched HTML length: ${html.length}`);
 
@@ -36,15 +37,15 @@ export async function fetchMetadataWithMetascraper(url: string): Promise<Metadat
     metascraperTitle(),
     metascraperDescription(),
     metascraperImage(),
-    // Add more plugins if needed.
+    // Additional plugins can be added here.
   ]);
 
   console.log(`Running metascraper with plugins on URL: ${url}`);
-  // Use the scraper instance to extract metadata by passing an object with 'html' and 'url'.
+  // Extract metadata by providing the HTML and URL.
   const meta = await scraper({ html, url });
   console.log('Metascraper raw output:', meta);
 
-  // Map the metascraper result to our Metadata type.
+  // Map the metascraper output to our defined Metadata type.
   const result: Metadata = {
     title: meta.title || '',
     description: meta.description || '',
@@ -57,28 +58,29 @@ export async function fetchMetadataWithMetascraper(url: string): Promise<Metadat
 }
 
 /**
- * Attempts to fetch the page using Axios and Cheerio.
+ * fetchMetadataWithAxios
  *
- * This function is best for pages where content is static and available in the HTML.
- * It performs manual extraction of metadata such as title, description, image URL, and tags.
+ * Fetches the HTML of a page using Axios and manually extracts metadata using Cheerio.
+ * This is suitable for static pages where the content is available in the HTML.
  *
  * @param url - The URL of the page to fetch.
  * @returns A promise that resolves to a Metadata object.
  */
 export async function fetchMetadataWithAxios(url: string): Promise<Metadata> {
   console.log(`Fetching HTML via axios for Cheerio extraction from: ${url}`);
+  // Retrieve the HTML content using axios.
   const response = await axios.get(url);
   const html = response.data;
   console.log(`Fetched HTML length: ${html.length}`);
 
-  // Load the HTML into Cheerio for easy querying.
+  // Load the HTML into Cheerio for DOM manipulation.
   const $ = cheerio.load(html);
 
-  // Extract the title using Open Graph meta tag or the <title> element.
+  // Extract title using Open Graph meta tag or the <title> element.
   const title = $("meta[property='og:title']").attr("content") || $("title").text().trim() || "";
   console.log('Extracted title:', title);
   
-  // Extract the description from various meta tags.
+  // Extract description from standard meta or Open Graph meta tags.
   const description =
     $("meta[name='description']").attr("content") ||
     $("meta[property='og:description']").attr("content") ||
@@ -93,12 +95,13 @@ export async function fetchMetadataWithAxios(url: string): Promise<Metadata> {
   let tags: string[] = [];
   let categories: string[] = [];
 
-  // Extract tags from JSON-LD scripts if available.
+  // Attempt to extract tags from JSON-LD scripts.
   $("script[type='application/ld+json']").each((i, script) => {
     try {
       const jsonData = JSON.parse($(script).html() || "{}");
       console.log(`JSON-LD data from script ${i}:`, jsonData);
       if (jsonData.keywords) {
+        // Split keywords by commas, trim each, and merge with existing tags.
         tags = [
           ...new Set([
             ...tags,
@@ -106,6 +109,7 @@ export async function fetchMetadataWithAxios(url: string): Promise<Metadata> {
           ]),
         ];
       } else if (jsonData.about) {
+        // If 'about' field exists, handle both string and array formats.
         if (typeof jsonData.about === "string") {
           tags.push(jsonData.about);
         } else if (Array.isArray(jsonData.about)) {
@@ -119,7 +123,7 @@ export async function fetchMetadataWithAxios(url: string): Promise<Metadata> {
     }
   });
 
-  // Extract additional tags from the meta keywords tag if available.
+  // Additionally, try to extract tags from the meta keywords tag.
   const metaKeywords = $("meta[name='keywords']").attr("content");
   if (metaKeywords) {
     tags = [
@@ -131,6 +135,7 @@ export async function fetchMetadataWithAxios(url: string): Promise<Metadata> {
   }
   console.log('Extracted tags:', tags);
 
+  // Map the extracted values to our Metadata type.
   const result: Metadata = {
     title,
     description,
@@ -143,23 +148,24 @@ export async function fetchMetadataWithAxios(url: string): Promise<Metadata> {
 }
 
 /**
- * Uses Puppeteer to fetch metadata from pages that load content dynamically.
+ * fetchMetadataWithPuppeteer
  *
- * Puppeteer is used for sites that rely on JavaScript to render content.
- * It launches a headless browser, navigates to the URL, and extracts metadata.
+ * Uses Puppeteer to fetch metadata from pages that load content dynamically with JavaScript.
+ * It launches a headless browser, navigates to the URL, waits for the page to load,
+ * and then extracts metadata by evaluating page content.
  *
  * @param url - The URL of the page to fetch.
  * @returns A promise that resolves to a Metadata object.
  */
 export async function fetchMetadataWithPuppeteer(url: string): Promise<Metadata> {
   console.log(`Launching Puppeteer for URL: ${url}`);
-  // Launch Puppeteer with arguments for environments like Heroku.
+  // Launch a headless browser with specific flags for sandboxing.
   const browser = await puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   const page = await browser.newPage();
 
-  // Set a user agent to mimic a real browser.
+  // Set a realistic user agent to mimic a real browser.
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
   );
@@ -167,27 +173,30 @@ export async function fetchMetadataWithPuppeteer(url: string): Promise<Metadata>
   console.log(`Navigating to ${url} with Puppeteer...`);
   // Navigate to the target URL and wait until network activity ceases.
   await page.goto(url, { waitUntil: "networkidle2" });
-  // Optional: Additional wait time to ensure dynamic content loads.
+  // Optional delay to ensure dynamic content loads fully.
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // Evaluate the page's content in the browser context.
+  // Evaluate the page content to extract metadata.
   const metadata: Metadata = await page.evaluate(() => {
-    // Helper function to get the content attribute of a meta tag.
+    // Helper function to get the content attribute from a meta tag.
     const getMeta = (selector: string): string =>
       document.querySelector(selector)?.getAttribute("content") || "";
 
+    // Extract the title from meta tags or the <title> element.
     const title =
       getMeta("meta[property='og:title']") ||
       document.querySelector("title")?.innerText ||
       "";
+    // Extract the description from meta tags.
     const description =
       getMeta("meta[name='description']") ||
       getMeta("meta[property='og:description']") ||
       "";
+    // Extract the image URL from meta tags.
     const imageUrl = getMeta("meta[property='og:image']") || "";
 
     let tags: string[] = [];
-    // Example: extract tags specific to Behance pages.
+    // Example: for Behance pages, extract tags from elements.
     const behanceTags = document.querySelectorAll(".ProjectTags-link");
     if (behanceTags.length > 0) {
       tags = Array.from(behanceTags)
@@ -195,19 +204,19 @@ export async function fetchMetadataWithPuppeteer(url: string): Promise<Metadata>
         .filter(Boolean);
     }
 
-    // Attempt to extract tags from meta keywords.
+    // Also try to extract tags from the meta keywords tag.
     const metaKeywords = getMeta("meta[name='keywords']");
     if (metaKeywords) {
       tags = metaKeywords.split(",").map((tag) => tag.trim()).filter(Boolean);
     }
 
     let categories: string[] = [];
-    // Extract categories from meta tags (e.g., article section).
+    // Extract category information from meta tags.
     const categoryMeta = getMeta("meta[property='article:section']");
     if (categoryMeta) {
       categories.push(categoryMeta);
     } else {
-      // Fallback: try to extract categories from a breadcrumbs element.
+      // Fallback: extract category from breadcrumbs if available.
       const categoryEl = document.querySelector(".Breadcrumbs-listItem span");
       if (categoryEl && categoryEl.textContent) {
         categories.push(categoryEl.textContent.trim());
@@ -218,18 +227,18 @@ export async function fetchMetadataWithPuppeteer(url: string): Promise<Metadata>
   });
   console.log('Extracted Metadata (Puppeteer):', metadata);
 
-  // Close the browser to free up resources.
+  // Close the Puppeteer browser to free resources.
   await browser.close();
   return metadata;
 }
 
 /**
- * Determines which fetching method to use based on the URL's characteristics.
+ * determineFetchMethod
  *
- * This function performs a quick Axios request to inspect the page content.
- * If the title is missing or the content suggests the page is JS-heavy (e.g., Behance, Pinterest, Instagram, etc.),
- * it returns "puppeteer" so that Puppeteer is used for rendering dynamic content.
- * Otherwise, it opts for Axios (and you can choose to process with metascraper).
+ * Determines the optimal method to fetch a page's metadata by performing a quick Axios request.
+ * It inspects the page content (e.g., title) to decide if the page is static or JS-heavy.
+ * For pages with missing titles or those indicating dynamic content (like Behance, Pinterest, etc.),
+ * it returns "puppeteer" to use Puppeteer for rendering. Otherwise, it opts for Axios.
  *
  * @param url - The URL of the page.
  * @returns A promise that resolves to either "axios" or "puppeteer".
@@ -237,16 +246,18 @@ export async function fetchMetadataWithPuppeteer(url: string): Promise<Metadata>
 export async function determineFetchMethod(url: string): Promise<"axios" | "puppeteer"> {
   console.log(`Determining fetch method for URL: ${url}`);
   try {
-    // Try a quick fetch with Axios.
+    // Perform a quick fetch using Axios with a timeout.
     const response = await axios.get(url, { timeout: 5000 });
     const html = response.data;
     console.log(`Quick axios fetch succeeded, HTML length: ${html.length}`);
+    // Load the HTML into Cheerio for parsing.
     const $ = cheerio.load(html);
 
+    // Extract the title from meta tags or the <title> element.
     const title = $("meta[property='og:title']").attr("content") || $("title").text().trim() || "";
     console.log(`Extracted title for method determination: "${title}"`);
 
-    // If no title is found or the title suggests a JS-heavy page, use Puppeteer.
+    // If no title is found or if the title suggests the site is JS-heavy, use Puppeteer.
     if (!title || /Behance|Pinterest|Instagram|Twitter|Medium/i.test(title)) {
       console.log(`Detected JS-heavy site, using Puppeteer for: ${url}`);
       return "puppeteer";
@@ -257,4 +268,4 @@ export async function determineFetchMethod(url: string): Promise<"axios" | "pupp
     console.error("Axios fetch failed, defaulting to Puppeteer:", error);
     return "puppeteer";
   }
-}
+} 

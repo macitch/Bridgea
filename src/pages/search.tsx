@@ -1,30 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+// Import Next.js router for handling navigation and query parameters.
 import { useRouter } from 'next/router';
+// Import Firestore functions to perform queries.
 import { collection, query, orderBy, startAt, endAt, getDocs, where } from 'firebase/firestore';
+// Import the Firestore database instance.
 import { db } from '@/provider/Google/firebase';
+// Import the authentication hook to get user data.
 import { useAuth } from '@/context/AuthProvider';
+// Import the DashboardLayout to wrap the page.
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 
 /**
  * SearchPage component allows a user to search through their saved links.
- * It leverages Firebase Firestore to query the "links" collection.
+ * It leverages Firebase Firestore to query the "links" collection based on
+ * the search query provided via the URL's query parameters.
  */
 const SearchPage = () => {
-  // Get user data from authentication context.
+  // Retrieve userData from the auth context.
   const { userData } = useAuth();
-  
-  // Access Next.js router to work with query parameters.
-  const router = useRouter();
-  
-  // Extract the search query from the router query parameters.
-  // If the query parameter is a string, use it directly.
-  // Otherwise, attempt to extract a specific 'query' key from the query object.
-  const { query: queryParam } = router;
-  const searchQuery = typeof queryParam === 'string' 
-    ? queryParam 
-    : (queryParam.query as string) || '';
 
-  // Local state to store search results and track if a search has been performed.
+  // Get the Next.js router instance to work with URL query parameters.
+  const router = useRouter();
+
+  // Extract the "query" parameter from the URL.
+  // If it's a string, use it directly; otherwise, attempt to retrieve it from an object.
+  const { query: queryParam } = router;
+  const searchQuery =
+    typeof queryParam === 'string'
+      ? queryParam
+      : (queryParam.query as string) || '';
+
+  // Local state to store search results and track whether a search was performed.
   const [results, setResults] = useState<any[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -34,14 +40,17 @@ const SearchPage = () => {
    * - User data updates.
    * - The router is ready (i.e., query parameters are available).
    *
-   * It performs the search by querying Firestore based on the current searchQuery.
+   * This hook performs the following:
+   * 1. If the search query is empty, it fetches all links for the current user.
+   * 2. Otherwise, it queries the "links" collection filtering by the lowercased
+   *    search query using Firestore's startAt and endAt.
    */
   useEffect(() => {
     const performSearch = async () => {
-      // Indicate that a search has been initiated.
+      // Mark that a search has been initiated.
       setHasSearched(true);
 
-      // Get the current user's UID from the authentication context.
+      // Get the current user's UID. If not available, log an error.
       const currentUid = userData?.uid;
       if (!currentUid) {
         console.error("User is not authenticated.");
@@ -49,49 +58,43 @@ const SearchPage = () => {
       }
 
       try {
+        // Check if the search query is empty.
         if (!searchQuery.trim()) {
-          // If the search query is empty, fetch all links for the current user.
+          // If empty, query all links for the current user.
           const allQuery = query(
             collection(db, "links"),
             where("userId", "==", currentUid)
           );
-          // Retrieve all documents that match the query.
           const snapshot = await getDocs(allQuery);
-          // Map the documents to an array of result objects.
-          const allResults = snapshot.docs.map(doc => ({
+          const allResults = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data()
           }));
-          // Update the state with the fetched results.
           setResults(allResults);
         } else {
-          // Otherwise, perform a search on the "searchTerms" field.
-          // Convert the search query to lowercase for case-insensitive search.
+          // Otherwise, perform a filtered search on the "searchTerms" field.
           const searchQueryRef = query(
             collection(db, "links"),
             where("userId", "==", currentUid),
             orderBy("searchTerms"),
-            // Use startAt and endAt to filter documents matching the query string.
+            // Use startAt and endAt to get documents that match the search query (case-insensitive).
             startAt(searchQuery.toLowerCase()),
             endAt(searchQuery.toLowerCase() + "\uf8ff")
           );
-          // Retrieve the filtered documents.
           const snapshot = await getDocs(searchQueryRef);
-          // Map the documents to an array of result objects.
-          const filteredResults = snapshot.docs.map(doc => ({
+          const filteredResults = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data()
           }));
-          // Update the state with the search results.
           setResults(filteredResults);
         }
       } catch (error) {
-        // Log any errors that occur during the search.
+        // Log any errors that occur during the search process.
         console.error("Search failed:", error);
       }
     };
 
-    // Only perform the search once the router is ready (ensuring query params are available).
+    // Run the search only when the router is ready (i.e., query parameters are available).
     if (router.isReady) {
       performSearch();
     }
@@ -102,11 +105,11 @@ const SearchPage = () => {
       {/* Display the search query in the heading */}
       <h2 className="text-xl font-bold mb-4">Search Results for &quot;{searchQuery}&quot;</h2>
       <div>
-        {/* If a search has been performed, and no results are found, display a message */}
+        {/* If a search was performed, but no results are found, show a message */}
         {hasSearched && searchQuery && results.length === 0 && (
           <p className="text-gray-500">No results found.</p>
         )}
-        {/* Map over the results and render each link's title */}
+        {/* Render each result as a simple div showing the link title */}
         {results.map((result) => (
           <div key={result.id} className="py-1 border-b border-gray-200">
             {result.title || "Untitled"}

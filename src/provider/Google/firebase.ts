@@ -2,6 +2,8 @@ import { initializeApp } from "firebase/app";
 import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// Firebase configuration object populated with environment variables.
+// This configuration is used to initialize your Firebase app.
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -12,14 +14,19 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
+// Initialize the Firebase app with the provided configuration.
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firestore and export it for use in your application.
 export const db = getFirestore(app);
 
-// Ensure Firebase persists user sessions across refreshes
+// Initialize Firebase Auth.
 const auth = getAuth();
+// Set authentication persistence to browserLocalPersistence so that the user session
+// persists across browser refreshes. Log success or error accordingly.
 setPersistence(auth, browserLocalPersistence)
   .then(() => console.log("✅ Firebase auth persistence enabled"))
   .catch((error) => console.error("❌ Error setting auth persistence:", error));
 
+// Export the auth instance for use throughout your app.
 export { auth };

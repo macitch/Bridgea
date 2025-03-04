@@ -2,35 +2,40 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { FirestoreUser } from '@/models/users'; 
 
+// Define the props for the UserMenu component.
 interface UserMenuProps {
+  // The authenticated user data.
   user: FirestoreUser;
+  // Callback when the "Profile" option is selected.
   onProfile: () => void;
+  // Callback when the "Logout" option is selected.
   onLogout: () => void;
 }
 
 /**
  * UserMenu Component
  *
- * - Uses the styling from the search bar component.
- * - Replaces the search icon with the user's profile picture.
- * - Displays the user's displayName.
- * - Provides a dropdown with "Profile" and "Logout" options.
+ * Renders a pill-shaped button that displays the user's profile picture,
+ * display name, and a dropdown arrow. When clicked, it toggles a dropdown menu
+ * with "Profile" and "Logout" options.
  */
 const UserMenu: React.FC<UserMenuProps> = ({ user, onProfile, onLogout }) => {
+  // Local state to control whether the dropdown is open.
   const [isOpen, setIsOpen] = useState(false);
 
+  // Toggle the dropdown open/closed state.
   const handleToggleDropdown = () => {
     setIsOpen(!isOpen);
   };
 
   return (
     <div className="relative inline-block">
-      {/* Pill-shaped container */}
+      {/* Main container: a pill-shaped button that toggles the dropdown */}
       <div
         onClick={handleToggleDropdown}
         className="flex items-center border-2 border-[var(--grey)] rounded-full bg-white px-3 py-2 w-full max-w-sm cursor-pointer"
       >
-        {/* Left: Profile Picture or fallback icon */}
+        {/* Left section: User's profile picture or a fallback icon */}
         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--grey)] mr-2 overflow-hidden">
           {user.photoURL ? (
             <img
@@ -39,6 +44,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onProfile, onLogout }) => {
               className="w-full h-full object-cover"
             />
           ) : (
+            // Fallback SVG icon if no profile picture is available.
             <svg
               className="h-4 w-4 text-gray-500"
               fill="none"
@@ -55,22 +61,24 @@ const UserMenu: React.FC<UserMenuProps> = ({ user, onProfile, onLogout }) => {
           )}
         </div>
 
-        {/* Center: User's displayName */}
+        {/* Center section: Display the user's display name */}
         <span className="text-[var(--black)] text-base mr-1">{user.displayName}</span>
 
-        {/* Right: Dropdown arrow */}
+        {/* Right section: Dropdown arrow icon */}
         <ChevronDown className="w-4 h-4 text-[var(--black)]" />
       </div>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu: Only rendered when isOpen is true */}
       {isOpen && (
         <div className="absolute right-0 mt-2 w-40 bg-white border-2 border-[var(--grey)] rounded-md shadow-lg py-2 z-20">
+          {/* "Profile" option */}
           <button
             onClick={onProfile}
             className="block w-full text-left px-4 py-2 text-sm text-[var(--black)] hover:bg-gray-100"
           >
             Profile
           </button>
+          {/* "Logout" option */}
           <button
             onClick={onLogout}
             className="block w-full text-left px-4 py-2 text-sm text-[var(--black)] hover:bg-gray-100"

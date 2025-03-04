@@ -1,6 +1,7 @@
-// pages/login.tsx
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+// Import Next.js router for navigation.
 import { useRouter } from "next/router";
+// Import Firebase authentication methods.
 import { 
   getAuth, 
   setPersistence, 
@@ -11,86 +12,93 @@ import {
   GoogleAuthProvider,
   AuthError 
 } from "firebase/auth";
-import dynamic from "next/dynamic";
+// Import Next.js Link component for navigation.
 import Link from "next/link";
+// Import the custom authentication hook to access auth state.
 import { useAuth } from "@/context/AuthProvider"; 
+// Import motion for animations.
 import { motion } from "motion/react";
 
 const LoginPage = () => {
+  // Local state for the email and password fields.
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  // Local state for the "Remember me" checkbox.
   const [rememberMe, setRememberMe] = useState<boolean>(false);
+  // Local state for error messages.
   const [error, setError] = useState<string>("");
+  // Local state to indicate if a login operation is in progress.
   const [loading, setLoading] = useState<boolean>(false);
   
+  // Get Next.js router instance for navigation.
   const router = useRouter();
+  // Get Firebase auth instance.
   const auth = getAuth();
-  const { user, userData } = useAuth(); 
+  // Retrieve the current user from our auth context.
+  const { user } = useAuth(); 
 
-  React.useEffect(() => {
-    if (user && userData) {
-      if (userData.workspaceName && userData.workspaceName.trim() !== "") {
-        console.log("✅ Workspace found. Redirecting to /dashboard...");
-        router.replace("/dashboard");
-      } else {
-        console.log("⚠️ Workspace missing. Redirecting to /start...");
-        router.replace("/start");
-      }
+  // (Optional) Redirect the user to the dashboard if already logged in.
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
     }
-  }, [user, userData, router]);
+  }, [user, router]);
 
+  // Handler for form submission to log in the user.
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("🔄 Login button pressed with Email:", email);
+    // Reset error state.
     setError("");
+    // Indicate loading state.
     setLoading(true);
 
+    // Set the persistence type based on the "Remember me" option.
     const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
 
     try {
-      console.log("⚙️ Setting persistence...");
+      // Set the desired persistence for the authentication session.
       await setPersistence(auth, persistence);
-      console.log("✅ Persistence set successfully.");
-
-      console.log("🔑 Signing in user...");
+      // Attempt to sign in with email and password.
       await signInWithEmailAndPassword(auth, email, password);
-      console.log("✅ Sign in successful! Redirecting to /dashboard..."); 
-      
+      // On success, redirection is handled by the global auth wrapper.
     } catch (err) {
+      // Cast error as AuthError to extract the message.
       const firebaseError = err as AuthError;
-      console.error("❌ Error during sign in:", firebaseError);
+      // Set the error message.
       setError(firebaseError.message || "An error occurred, please try again.");
     } finally {
+      // Clear the loading state.
       setLoading(false);
     }
   };
 
+  // Handler for logging in using Google Sign-In.
   const handleGoogleLogin = async () => {
     try {
-      console.log("🔄 Initiating Google Sign-In...");
+      // Create a new GoogleAuthProvider instance.
       const provider = new GoogleAuthProvider();
+      // Attempt to sign in with Google using a popup.
       await signInWithPopup(auth, provider);
-      console.log("✅ Google Sign-In successful! Redirecting to /dashboard...");
     } catch (err) {
+      // Cast error as AuthError and set the error message.
       const firebaseError = err as AuthError;
-      console.error("❌ Google Sign-In failed:", firebaseError);
       setError(firebaseError.message || "Google Sign-In failed.");
     }
   };
 
   return (
     <div className="flex h-screen">
-      {/* Left side: Contains logo and headline */}
+      {/* Left side: Branding and headline */}
       <div className="w-1/2 h-screen flex flex-col">
-        {/* Top area with logo and tagline */}
+        {/* Logo and tagline */}
         <div className="p-8 flex items-center">
-           <img src="/assets/logo.svg" alt="Logo" className="w-16 h-auto mr-4" />
-        <div>
-           <h1 className="text-2xl font-bold text-black">Bridgea</h1>
-           <p className="text-sm text-gray-700">Organize Today, Discover Tomorrow.</p>
+          <img src="/assets/logo.svg" alt="Logo" className="w-16 h-auto mr-4" />
+          <div>
+            <h1 className="text-2xl font-bold text-black">Bridgea</h1>
+            <p className="text-sm text-gray-700">Organize Today, Discover Tomorrow.</p>
+          </div>
         </div>
-      </div>
-        {/* Centered headline */}
+        {/* Animated headline area */}
         <div className="flex-grow flex items-center justify-center">
           <h1 className="max-w-2xl text-center text-[64px]">
             Your space, your links,{" "}
@@ -109,6 +117,7 @@ const LoginPage = () => {
                     ease: "easeInOut",
                     repeat: 9999,
                   }}
+                  // SVG path for an animated underline effect.
                   d="M142.293 1C106.854 16.8908 6.08202 7.17705 1.23654 43.3756C-2.10604 68.3466 29.5633 73.2652 122.688 71.7518C215.814 70.2384 316.298 70.689 275.761 38.0785C230.14 1.37835 97.0503 24.4575 52.9384 1"
                   stroke="#ff6523"
                   strokeWidth="3"
@@ -119,17 +128,19 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* Right side: Full-height Login Form Container, centered vertically and horizontally */}
+      {/* Right side: Login form */}
       <div className="w-1/2 h-screen flex items-center justify-center">
         <div>
+          {/* Greeting and introduction */}
           <div className="text-left mb-4">
-            <label className="block text-[4rem] text-[var(--black)]">Hello Again!</label>
+            <label className="block text-[4rem] text-black">Hello Again!</label>
             <span className="block text-[1.5rem] w-[400px]">
-              Sign in to continue your journey and  effortlessly manage your links.
+              Sign in to continue your journey and effortlessly manage your links.
             </span>
           </div>
+          {/* Login form */}
           <form onSubmit={handleLogin} className="space-y-4 flex flex-col items-center">
-            {/* Email Field */}
+            {/* Email input field */}
             <div>
               <input
                 type="email"
@@ -140,7 +151,7 @@ const LoginPage = () => {
                 required
               />
             </div>
-            {/* Password Field */}
+            {/* Password input field */}
             <div>
               <input
                 type="password"
@@ -151,7 +162,7 @@ const LoginPage = () => {
                 required
               />
             </div>
-            {/* Remember Me & Forgot Password */}
+            {/* Remember me checkbox and forgot password link */}
             <div className="flex items-center justify-between w-[400px]">
               <label className="flex items-center">
                 <input
@@ -166,24 +177,23 @@ const LoginPage = () => {
                 Forgot password?
               </Link>
             </div>
-            {/* Buttons Row with a separate vertical divider */}
+            {/* Row containing the login button and social login options */}
             <div className="flex w-[400px] mt-4">
-              {/* Login Button */}
               <button
                 type="submit"
-                className="flex-[3] h-[4.1rem] text-[var(--white)] rounded-xl font-bold bg-[var(--black)] hover:text-[var(--black)] hover:bg-[var(--orange)]"
+                className="flex-[3] h-[4.1rem] text-white rounded-xl font-bold bg-black hover:text-black hover:bg-[var(--orange)]"
               >
                 Login
               </button>
-              {/* Separate vertical divider */}
               <div className="w-px bg-gray-300 mx-4"></div>
-              {/* Group container for the remaining three buttons */}
               <div className="flex flex-[3] space-x-2">
+                {/* Google sign-in button */}
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
                   className="group flex-1 h-[4.1rem] flex justify-center items-center"
                 >
+                  {/* Google icon rendered via SVG */}
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
                     width="32" 
@@ -198,34 +208,13 @@ const LoginPage = () => {
                     <path d="M16,7.575c2.062,0,3.895,.713,5.358,2.087l4.009-4.009c-2.431-2.265-5.587-3.653-9.367-3.653-5.473,0-10.195,3.144-12.498,7.725l4.658,3.615c1.107-3.309,4.2-5.765,7.84-5.765Z"></path>
                   </svg>
                 </button>
-                <button type="button" className="group flex-1 h-[4.1rem] flex justify-center items-center">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="32" 
-                    height="32" 
-                    viewBox="0 0 32 32" 
-                    fill="currentColor"
-                    className="transition-colors duration-200 group-hover:text-[var(--orange)]"
-                  >
-                    <path d="M16,2.345c7.735,0,14,6.265,14,14-.002,6.015-3.839,11.359-9.537,13.282-.7,.14-.963-.298-.963-.665,0-.473,.018-1.978,.018-3.85,0-1.312-.437-2.152-.945-2.59,3.115-.35,6.388-1.54,6.388-6.912,0-1.54-.543-2.783-1.435-3.762,.14-.35,.63-1.785-.14-3.71,0,0-1.173-.385-3.85,1.435-1.12-.315-2.31-.472-3.5-.472s-2.38,.157-3.5,.472c-2.677-1.802-3.85-1.435-3.85-1.435-.77,1.925-.28,3.36-.14,3.71-.892,.98-1.435,2.24-1.435,3.762,0,5.355,3.255,6.563,6.37,6.913-.403,.35-.77,.963-.893,1.872-.805,.368-2.818,.963-4.077-1.155-.263-.42-1.05-1.452-2.152-1.435-1.173,.018-.472,.665,.017,.927,.595,.332,1.277,1.575,1.435,1.978,.28,.787,1.19,2.293,4.707,1.645,0,1.173,.018,2.275,.018,2.607,0,.368-.263,.787-.963,.665-5.719-1.904-9.576-7.255-9.573-13.283,0-7.735,6.265-14,14-14Z"></path>
-                  </svg>
-                </button>
-                <button type="button" className="group flex-1 h-[4.1rem] flex justify-center items-center">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="32" 
-                    height="32" 
-                    viewBox="0 0 32 32" 
-                    fill="currentColor"
-                    className="transition-colors duration-200 group-hover:text-[var(--orange)]"
-                  >
-                    <path d="M18.05,16c0,5.018-4.041,9.087-9.025,9.087S0,21.018,0,16,4.041,6.913,9.025,6.913s9.025,4.069,9.025,9.087m9.901,0c0,4.724-2.02,8.555-4.513,8.555s-4.513-3.831-4.513-8.555,2.02-8.555,4.512-8.555,4.513,3.83,4.513,8.555m4.05,0c0,4.231-.71,7.664-1.587,7.664s-1.587-3.431-1.587-7.664,.71-7.664,1.587-7.664,1.587,3.431,1.587,7.664"></path>
-                  </svg>
-                </button>
+                {/* Additional social login buttons can be added here */}
               </div>
             </div>
+            {/* Display error messages if any */}
             {error && <p className="text-red-500 text-center mt-2">{error}</p>}
           </form>
+          {/* Link to navigate to the Sign Up page */}
           <div className="mt-6 text-center text-sm text-black">
             Don’t have an account?{" "}
             <Link href="/signup" className="text-[var(--orange)] hover:underline">

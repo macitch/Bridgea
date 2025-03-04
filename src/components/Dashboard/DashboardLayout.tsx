@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     // Main container for the dashboard layout.
     // Uses flexbox to arrange the sidebar and main content side by side.
-    <div className="flex min-h-screen bg-[var(--grey)]">
+    <div className="flex h-screen bg-[var(--grey)]">
       
       {/* 1) Left Sidebar */}
       {/* Renders the DashboardSidebar component which typically contains navigation links. */}
