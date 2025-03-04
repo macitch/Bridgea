@@ -9,7 +9,6 @@ import {
 import {
   LayoutDashboard,
   Library,
-  Plus,
   Heart,
   Tags,
   Settings2,
@@ -19,39 +18,22 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import NewLinkButton from "../UI/NewLinkButton";
+import { cn } from "@/utils/twMerge";
 
-/**
- * DashboardSidebar Component
- * 
- * This component is responsible for rendering the **sidebar** and the **main content area**.
- * - The sidebar includes navigational links such as Dashboard, New Link, Favorites, etc.
- * - The main content area renders the children passed to the component.
- * - Uses `Sidebar` and `SidebarBody` from `SidebarElements.tsx` for layout.
- */
 export default function DashboardSidebar({ children }: { children?: React.ReactNode }) {
-  /**
-   * Sidebar navigation links.
-   * Each link contains:
-   * - `label`: The text displayed in the sidebar.
-   * - `href`: The route it navigates to.
-   * - `icon`: The associated icon for better UI/UX.
-   */
   const links: SidebarLinkData[] = [
-    { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-7 w-7" /> },
-    { label: "New Link", href: "/newlink", icon: <Plus className="h-7 w-7" /> },
-    { label: "Favorites", href: "/favorites", icon: <Heart className="h-7 w-7" /> },
-    { label: "Categories", href: "/categories", icon: <Library className="h-7 w-7" /> },
-    { label: "Tags", href: "/tags", icon: <Tags className="h-7 w-7" /> },
-    { label: "Settings", href: "/settings", icon: <Settings2 className="h-7 w-7" /> },
+    { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-6 w-6" /> },
+    { label: "Favorites", href: "/favorites", icon: <Heart className="h-6 w-6" /> },
+    { label: "Categories", href: "/categories", icon: <Library className="h-6 w-6" /> },
+    { label: "Tags", href: "/tags", icon: <Tags className="h-6 w-6" /> },
+    { label: "Settings", href: "/settings", icon: <Settings2 className="h-6 w-6" /> },
   ];
 
   return (
     <div className="flex flex-col md:flex-row h-screen mx-auto overflow-hidden">
-      {/* Sidebar Section */}
       <Sidebar>
         <SidebarBody className="justify-between gap-10">
-          <div className="flex flex-col flex-1 overflow-y-auto items-start w-full">
-            {/* Render Sidebar Links */}
+          <div className={cn("flex flex-col flex-1 overflow-y-auto", "w-full")}>
             <SidebarContent links={links} />
           </div>
         </SidebarBody>
@@ -60,43 +42,32 @@ export default function DashboardSidebar({ children }: { children?: React.ReactN
   );
 }
 
-/**
- * SidebarContent Component
- * 
- * - This component is responsible for rendering the sidebar's navigation links.
- * - It includes the **toggle button** to expand/collapse the sidebar (only on desktop).
- * - Uses `useSidebar()` to track sidebar state (`open` and `setOpen`).
- *      
- *  {/* Main Content Area */ /*
-<main className="w-full overflow-y-auto bg-[var(--grey)] p-4 rounded-tl-2xl">
- {/* Render children content if provided; otherwise, show default message *//*
- {children || <div className="text-gray-700">No content available.</div>}
-</main>
- */
 const SidebarContent = ({ links }: { links: SidebarLinkData[] }) => {
-  const { open, setOpen } = useSidebar(); // Access sidebar open/close state
+  const { open, setOpen } = useSidebar();
 
   return (
     <>
-      {/* Display either the full logo (when sidebar is open) or just the icon */}
-      { open ? <Logo /> : <LogoIcon />}
-      <NewLinkButton />
-      {/* Render Sidebar Links */}
-      <div className="flex flex-col gap-2 w-full">
+      {/* Logo Section - Consistent Height */}
+      {open ? <Logo /> : <LogoIcon />}
+
+      {/* New Link Button - Consistent Height */}
+      <div className={cn("flex flex-col gap-2 w-full", open ? "items-start" : "items-center")}>
+        <NewLinkButton />
         {links.map((link) => (
-          <SidebarLink key={link.label} link={link} />
+          <SidebarLink key={link.label} link={link} className="flex items-center" />
         ))}
       </div>
 
-      {/* Sidebar Toggle Button (Hidden on Mobile) */}
+      {/* Sidebar Toggle Button - Consistent Height */}
       <div className="mt-auto w-full hidden md:block">
         <SidebarLink
           link={{
             label: "Toggle Sidebar",
-            href: "", // No navigation, just toggle functionality
-            icon: <PanelLeft className="h-7 w-" />,
+            href: "",
+            icon: <PanelLeft className="h-6 w-6" />,
           }}
-          onClick={() => setOpen(!open)} // Click event toggles sidebar state
+          className="flex items-center"
+          onClick={() => setOpen(!open)} 
         />
       </div>
     </>
@@ -104,56 +75,49 @@ const SidebarContent = ({ links }: { links: SidebarLinkData[] }) => {
 };
 
 /**
- * Logo Component
- * 
- * - Displays the full logo with text when the sidebar is **open**.
- * - Uses `motion.span` for smooth animations.
+ * Logo Component - Matches Sidebar Elements
  */
 const Logo = () => {
-  const { open } = useSidebar(); // Access sidebar state
+  const { open } = useSidebar();
 
   return (
     <Link
       href="/dashboard"
-      className="flex space-x-2 items-center text-black py-1 relative z-20 h-[32px]" 
+      className={cn(
+        "flex items-center rounded-full transition-all duration-200",
+        open ? "px-3 py-2 w-full" : "justify-center w-12 h-12"
+      )}
     >
-      {/* Logo Icon Always Visible */}
-      <Image
-        src="/assets/logo.svg"
-        alt="Bridgea Logo"
-        width={24}
-        height={24}
-        className="object-contain"
-      />
+      {/* Logo Icon - Ensures Consistent Size */}
+      <div className="flex items-center justify-center w-10 h-10 rounded-full">
+        <Image src="/assets/logo.svg" alt="Bridgea Logo" width={24} height={24} className="object-contain" />
+      </div>
 
-      {/* Animated Text - Wrap in a `div` for Fixed Height */}
-      <motion.div
-        className="overflow-hidden flex items-center h-[24px]"
+      {/* Animated Text - Visible When Sidebar is Open */}
+      <motion.span
         animate={{
           opacity: open ? 1 : 0,
-          width: open ? "100px" : "0px", 
+          width: open ? "auto" : "0px",
         }}
-        transition={{ duration: 0.2, ease: "easeInOut" }} 
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className="overflow-hidden whitespace-nowrap text-xl font-bold"
       >
-        <span className="whitespace-nowrap text-xl font-bold leading-none">
-          Bridgea.
-        </span>
-      </motion.div>
+        Bridgea.
+      </motion.span>
     </Link>
   );
 };
 
 /**
- * LogoIcon Component
- * 
- * - Displays only the **logo icon** when the sidebar is **closed**.
+ * LogoIcon Component - For Collapsed Sidebar
  */
 const LogoIcon = () => (
-  <Link href="/dashboard" className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20 h-[32px]">
-    {/* Logo Image */}
+  <Link
+    href="/dashboard"
+    className="flex items-center justify-center rounded-full transition-all duration-200 w-12 h-12"
+  >
     <Image src="/assets/logo.svg" alt="Bridgea Logo" width={24} height={24} className="object-contain" />
   </Link>
 );
 
-
-// Remove sidebar when the user click on the url 
+export { Logo, LogoIcon };

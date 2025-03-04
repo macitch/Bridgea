@@ -12,7 +12,7 @@ import {
 import { categorisedWithAI } from '@/provider/AI/processCategorisedWithAI';
 
 // Import AI-based tag processing function.
-import { processTagsWithAI } from '@/provider/AI/processTagsWithAi';
+import { processTagsWithAI } from '@/provider/AI/processTagsWithAI';
 
 // A Set to keep track of ongoing requests for a specific URL.
 // This prevents duplicate processing if multiple requests for the same URL occur simultaneously.

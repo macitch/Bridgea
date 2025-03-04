@@ -74,49 +74,45 @@ export const signUp = async (
       throw new Error("All fields are required");
     }
 
-    // Create the user with Firebase Auth
-    const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    if (!user.email) {
-      throw new Error("User email is unexpectedly null.");
-    }
+    if (!user.email) throw new Error("User email is unexpectedly null.");
 
-    // Generate a default avatar from the displayName initials
     const defaultAvatar = generateDefaultAvatar(displayName);
-
-    // Update the user's Firebase Auth profile with the displayName and default photoURL
     await updateProfile(user, { displayName, photoURL: defaultAvatar });
 
-    // Create the Firestore user document (conforming to FirestoreUser interface)
-    await setDoc(doc(db, "users", user.uid), {
-      displayName,
-      email: user.email,
-      workspaceName,
-      photoURL: defaultAvatar,
-      createdAt: serverTimestamp(),
-      lastLogin: serverTimestamp(),
-      emailVerified: false,
-      role: "owner",
-    });
+    // Unique workspace ID to avoid conflicts
+    const uniqueWorkspaceId = `${user.uid}-${workspaceName.replace(/\s+/g, "-").toLowerCase()}`;
 
-    // Create a workspace document in Firestore associated with the user
-    await setDoc(doc(db, "workspaces", workspaceName), {
-      owner: user.uid,
-      members: [user.uid],
-      createdAt: serverTimestamp(),
-    });
+    await Promise.all([
+      setDoc(doc(db, "users", user.uid), {
+        displayName,
+        email: user.email,
+        workspaceName: uniqueWorkspaceId, // Store the unique ID
+        photoURL: defaultAvatar,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        emailVerified: false,
+        role: "owner",
+      }),
+      setDoc(doc(db, "workspaces", uniqueWorkspaceId), {
+        name: workspaceName,
+        owner: user.uid,
+        members: [user.uid],
+        createdAt: serverTimestamp(),
+      }),
+    ]);
 
-    // Send email verification to the new user
     await sendEmailVerification(user);
 
     return {
       uid: user.uid,
       email: user.email,
       emailVerified: user.emailVerified,
-      workspaceName,
+      workspaceName: uniqueWorkspaceId,
     };
-  } catch (error: unknown) {
+  } catch (error) {
     throw new Error(formatFirebaseError(error));
   }
 };

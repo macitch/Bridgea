@@ -16,7 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
  */
 export async function categorisedWithAI(metadata: { title: string; description: string; tags: string[] }): Promise<string[]> {
   // Get the generative model instance (using the "gemini-pro" model).
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
   
   // Build a dynamic prompt using the provided metadata.
   // The prompt instructs Gemini to classify the link into broad categories.

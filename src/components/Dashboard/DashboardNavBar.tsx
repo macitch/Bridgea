@@ -1,150 +1,169 @@
-import React, { useState, useMemo } from 'react';
-import { MessageCircle } from 'lucide-react';
-import SearchBar from '../UI/SearchBar';
-import UserMenu from '../UI/UserMenu';
-import { FirestoreUser } from '@/models/users';
-import { useAuth } from '@/context/AuthProvider';
-import { logout } from '@/provider/Google/auth';
-import { collection, query, orderBy, startAt, endAt, getDocs, where } from "firebase/firestore";
-import { db } from '@/provider/Google/firebase';
-import debounce from 'lodash.debounce';
-import { useRouter } from 'next/router';
+import React, { useState } from "react";
+import SearchBar from "../UI/SearchBar";
+import UserMenu from "../UI/UserMenu";
+import { FirestoreUser } from "@/models/users";
+import { useAuth } from "@/context/AuthProvider";
+import { logout } from "@/provider/Google/auth";
+import { useRouter } from "next/router";
+import ChatToggleButton from "../UI/ChatToggleButton";
+import ChatPanel from "../TIA/ChatPanel";
+import { useLinkSync } from "@/provider/Chat/sync";
+import { db } from "@/provider/Google/firebase";
+import { collection, query, getDocs, where } from "firebase/firestore";
+import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
+
+const embeddings = new GoogleGenerativeAIEmbeddings({
+  apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+  modelName: "embedding-001",
+});
+
+interface LinkData {
+  id: string;
+  url: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  categories: string[];
+  tags: string[];
+  isFavorite: boolean;
+  userId: string;
+  createdAt: any;
+  searchTerms?: string;
+}
 
 export default function DashboardNavbar() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
-  const { userData } = useAuth();
+  const { user: authUser, userData, loading } = useAuth();
   const router = useRouter();
-  const avatarUrl = userData?.photoURL || "/assets/logo.png";
+  console.log("UseLinkSync Not trigered");
+  useLinkSync();
+  console.log("UseLinkSync trigered");
 
-  const user: FirestoreUser = {
+  const syncNow = async () => {
+    if (!authUser) {
+      console.log("No authenticated user for manual sync");
+      return;
+    }
+
+    console.log("Manual sync requested for user:", authUser.uid);
+    try {
+      // Try /users/{userId}/links first
+      let linksQuery = query(collection(db, "users", authUser.uid, "links"));
+      let snapshot = await getDocs(linksQuery);
+      let links = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        userId: authUser.uid,
+      })) as LinkData[];
+
+      console.log("Fetched from /users/{userId}/links:", links);
+
+      // If no links found, try /links with userId filter
+      if (links.length === 0) {
+        console.log("No links in /users/{userId}/links, trying /links...");
+        linksQuery = query(collection(db, "links"), where("userId", "==", authUser.uid));
+        snapshot = await getDocs(linksQuery);
+        links = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          userId: authUser.uid,
+        })) as LinkData[];
+        console.log("Fetched from /links:", links);
+      }
+
+      if (links.length === 0) {
+        console.log("No links found in either collection");
+      }
+
+      const syncData = await Promise.all(
+        links.map(async (link) => {
+          const text = `${link.title || link.url} ${link.description || ""} ${link.tags?.join(" ") || ""} ${link.categories?.join(" ") || ""} ${link.searchTerms || ""}`;
+          const vector = await embeddings.embedQuery(text);
+          return {
+            id: link.id,
+            text,
+            vector,
+            metadata: JSON.stringify({
+              url: link.url,
+              title: link.title || link.url,
+              description: link.description || "",
+              imageUrl: link.imageUrl || "",
+              categories: link.categories || [],
+              tags: link.tags || [],
+              isFavorite: link.isFavorite || false,
+              userId: link.userId,
+              dateAdded: link.createdAt?.toDate().toISOString() || new Date().toISOString(),
+            }),
+          };
+        })
+      );
+
+      console.log("Sync data prepared with", syncData.length, "links");
+
+      const token = await authUser.getIdToken();
+      const response = await fetch("/api/syncLanceDB", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: authUser.uid,
+          links: syncData,
+          schema: syncData.length === 0 ? { vector: Array(768).fill(0), text: "", id: "", metadata: "" } : undefined,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`Manual sync failed: ${await response.text()}`);
+      console.log("Manual sync successful:", await response.json());
+    } catch (error) {
+      console.error("Manual sync error:", error);
+    }
+  };
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  if (loading) return <div>Loading...</div>;
+
+  const avatarUrl = userData?.photoURL || "/assets/logo.png";
+  const userForMenu: FirestoreUser = {
     displayName: userData?.displayName || "Loading",
     email: userData?.email || "Loading",
     createdAt: new Date(),
     photoURL: avatarUrl,
   };
 
-  const debouncedSearch = useMemo(() => {
-    return debounce((value: string) => {
-      console.log("Debounced search triggered with value:", value);
-      handleSearch(value);
-    }, 300);
-  }, [userData]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    console.log("Search input changed:", value);
-    debouncedSearch(value);
-  };
-
   const handleSearch = async (value: string) => {
-    console.log('Starting search for:', value);
-    setHasSearched(true);
-
-    if (!value.trim()) {
-      console.log("Search term is empty. Exiting search.");
-      setSearchResults([]);
-      return;
-    }
-
-    try {
-      const currentUid = userData?.uid;
-      if (!currentUid) {
-        console.error("User is not authenticated.");
-        return;
-      }
-      
-      const q = query(
-        collection(db, "links"),
-        where("userId", "==", currentUid),
-        orderBy("searchTerms"),
-        startAt(value.toLowerCase()),
-        endAt(value.toLowerCase() + "\uf8ff")
-      );
-      console.log("Firestore query constructed:", q);
-
-      const snapshot = await getDocs(q);
-      console.log("Firestore snapshot received. Document count:", snapshot.docs.length);
-
-      const results = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      console.log("Search results parsed:", results);
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Search failed:", error);
+    setSearchTerm(value);
+    if (value.trim()) {
+      await syncNow(); // Sync before opening ChatPanel
+      setChatOpen(true);
     }
   };
 
-  // Navigate to the SearchPage and pass the search query as a URL parameter.
-  const handleResultClick = (result: any) => {
-    console.log(`Clicked on result: ${result.title || "Untitled"}`);
-    router.push(`/search?query=${encodeURIComponent(result.title || searchTerm)}`);
-  };
-
-  const handleProfile = () => {
-    console.log('Navigating to profile page.');
-    // Insert profile navigation logic here.
-  };
-
+  const handleProfile = () => router.push("/profile");
   const handleLogout = async () => {
-    console.log('Initiating logout process.');
-    try {
-      await logout();
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    await logout();
+    router.push("/login");
   };
 
   return (
-    <header className="w-full h-full flex items-center px-4 justify-between bg-[var(--white)] rounded-tl-2xl">
-      <div className="relative flex items-center space-x-2">
-        <SearchBar
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          onSearch={(value: string) => {
-            debouncedSearch.cancel();
-            console.log("Enter key pressed. Immediate search with value:", value);
-            handleSearch(value);
-            router.push(`/search?query=${encodeURIComponent(value)}`);
-          }}
-        />
-
-        {searchTerm && hasSearched && (
-          <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-20">
-            {searchResults.length === 0 ? (
-              <p className="p-2 text-gray-500">No results found.</p>
-            ) : (
-              searchResults.map((result) => (
-                <div
-                  key={result.id}
-                  className="p-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleResultClick(result)}
-                >
-                  {result.title || "Untitled"}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center space-x-4">
-        <button className="text-gray-600 hover:text-gray-800">
-          <MessageCircle className="w-5 h-5" />
-        </button>
-        <UserMenu
-          user={user}
-          onProfile={handleProfile}
-          onLogout={handleLogout}
-        />
-      </div>
-    </header>
+    <>
+      <header className="w-full h-full flex items-center px-4 justify-between bg-[var(--white)] rounded-tl-2xl">
+        <div className="flex items-center space-x-2">
+          <SearchBar
+            placeholder="Search via chatbot..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onSearch={handleSearch}
+          />
+        </div>
+        <div className="flex items-center space-x-4">
+          <ChatToggleButton onClick={() => setChatOpen(true)} />
+          <UserMenu user={userForMenu} onProfile={handleProfile} onLogout={handleLogout} />
+        </div>
+      </header>
+      <ChatPanel isOpen={chatOpen} onClose={() => setChatOpen(false)} user={authUser} initialMessage={searchTerm} />
+    </>
   );
 }

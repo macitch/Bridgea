@@ -73,7 +73,7 @@ export async function processTagsWithAI(metadata: { title: string; description: 
  */
 async function generateTagsWithGemini(metadata: { title: string; description: string; tags?: string[] }): Promise<string[]> {
   // Get the generative model instance (using the "gemini-pro" model in this case).
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
   
   // Build the prompt dynamically using the title and description from metadata.
   // The prompt instructs Gemini to generate 5 concise tags.

@@ -33,7 +33,7 @@ const IndexPage: React.FC = () => {
         {user ? (
           <button
             onClick={handleLogout}
-            className="px-6 py-3 bg-red-500 text-[var(--white)] rounded hover:bg-red-600 transition-colors"
+            className="px-6 py-3 text-[var(--white)] rounded hover:bg-red-600 transition-colors"
           >
             Logout
           </button>
