@@ -30,7 +30,7 @@ export async function initializeLanceDB(userId: string): Promise<LanceDB> {
     // This instance is used to generate embedding vectors for link content.
     const embeddings = new GoogleGenerativeAIEmbeddings({
       apiKey: process.env.GEMINI_API_KEY,
-      modelName: "gemini-1.5-pro",
+      modelName: "embedding-001",
     });
     // Determine the size of the embedding vector by embedding a test string.
     const vectorSize = (await embeddings.embedQuery("test")).length;
